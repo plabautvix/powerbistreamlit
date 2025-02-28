@@ -1,0 +1,36 @@
+[
+    {
+        "title": "Test Page",
+        "charts": [
+            {
+                "chart_name": "test",
+                "type": "Choropleth Map",
+                "dimension": [
+                    "ShipToState",
+                    "ShipToCity"
+                ],
+                "measure": [
+                    "Sales"
+                ],
+                "date_column": [
+                    "InvDate"
+                ],
+                "filter_dimensions": [
+                    "ShipToState",
+                    "ShipToCity"
+                ],
+                "dynamic_measures": [
+                    "Sales"
+                ],
+                "default_dynamic_measure": "Sales",
+                "file_path": "./database\\Sales_Invoice.parquet",
+                "position": [
+                    "ROW1, COL2"
+                ],
+                "invert": false,
+                "chart_id": "5edef4b402b94c9d953d97091a4b780b"
+            }
+        ],
+        "with_title": true
+    }
+]
