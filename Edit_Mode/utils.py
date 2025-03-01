@@ -5,10 +5,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 from streamlit import fragment, popover
 import pandas as pd
-from set_up_chart import get_available_positions
-from components.positions_component.src.streamlit_component_x import position_selector
-from set_up_chart import load_pages, save_pages
-import uuid
+
 def render_markdown():
     st.markdown(
         """
@@ -390,7 +387,10 @@ def create_edit_form(chart, fig):
     dimensions = st.multiselect("Select Dimension", available_dimensions, default=chart.get("dimension", []))
     measures = st.multiselect("Select Measure", available_measures, default=chart.get("measure", []))
     date_fields = st.multiselect("Select Date Field", available_date_fields, default=chart.get("date_column", []))
-
+    from set_up_chart import get_available_positions
+    from components.positions_component.src.streamlit_component_x import position_selector
+    from set_up_chart import load_pages, save_pages
+    import uuid
     available_positions = get_available_positions(st.session_state.name_of_actually_page)
     if not available_positions:
         st.warning(
