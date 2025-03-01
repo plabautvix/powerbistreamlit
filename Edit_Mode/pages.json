@@ -2,27 +2,6 @@
     {
         "title": "Test Page",
         "charts": [
-            {
-                "chart_name": null,
-                "type": "Bar Chart",
-                "dimension": [
-                    "Salesperson"
-                ],
-                "measure": [
-                    "Sales"
-                ],
-                "date_column": [
-                    "InvDate"
-                ],
-                "dynamic_measures": [
-                    "Sales"
-                ],
-                "file_path": "./database\\Sales_Invoice.parquet",
-                "position": [
-                    "ROW1, COL1"
-                ],
-                "chart_id": "d8dd7e01-0abe-4561-ab9a-5c1248d90e9e"
-            }
         ],
         "with_title": true
     }

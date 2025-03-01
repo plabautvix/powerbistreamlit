@@ -353,6 +353,7 @@ def create_filters(df, path, id_chart):
     return df, optional_info
 
 def render_chart_with_base_type_of_chart(chart):
+    st.subheader(chart["chart_name"], divider=True, anchor=False)
     df = read_parquet(chart["file_path"], chart.get("date_column", False))
     if chart["type"] == "Bar Chart":
         fig = create_bar_chart_with_filters(chart, df)
@@ -368,7 +369,7 @@ def render_chart_with_base_type_of_chart(chart):
         fig = create_variance_comparison_bar_chart_with_filters(chart, df)
     elif chart["type"] == "Choropleth Map":
         fig = create_choropleth_map_with_filters(chart, df)
-    
+
     if st.session_state["edit_mode_is_enabled"]:
         if st.button("Edit Chart :material/edit_square:", key=f"{chart['chart_id']}_edit", use_container_width=True):
             create_edit_form(chart, fig)
@@ -382,6 +383,7 @@ def create_edit_form(chart, fig):
     available_dimensions = df.select_dtypes(
         exclude=["number", "datetime"]
     ).columns.tolist()
+    name_of_chart = st.text_input("Chart Name", chart.get("chart_name", ""))
     available_measures = df.select_dtypes(include=["number"]).columns.tolist()
     available_date_fields = df.select_dtypes(include=["datetime"]).columns.tolist()
     dimensions = st.multiselect("Select Dimension", available_dimensions, default=chart.get("dimension", []))
@@ -401,12 +403,12 @@ def create_edit_form(chart, fig):
         for available_position in available_positions:
             if position in available_position:
                 available_positions.remove(available_position)
-    st.subheader("Select New Position")
+    st.markdown("Select New Position")
     selected_position = position_selector(positions=available_positions)
     
     if st.button("Save Changes", disabled=not bool(selected_position), use_container_width=True):
         chart_config = {
-                "chart_name": chart.get("title"),
+                "chart_name": name_of_chart,
                 "type": chart.get("type"),
                 "dimension": dimensions,
                 "measure": measures,
