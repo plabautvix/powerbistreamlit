@@ -92,7 +92,6 @@ def setup():
 
     file_path = os.path.join(data_dir, selected_file)
     df = pd.read_parquet(file_path)
-    st.write(df)
     st.write("### Preview of Selected DataFrame")
     st.dataframe(df.head(5))
 
@@ -108,19 +107,15 @@ def setup():
                 "No available positions on this page. Please remove an existing chart or select a different page."
             )
             return
-
-        col1 = st.columns([0.4, 1])[0]
-        with col1:
-
-            selected_position = position_selector(positions=available_positions)
-            if selected_position and [pos for pos in selected_position if "red" in pos]:
-                st.info(
-                    "This position is already occupied. Please select a different position."
-                )
-                return
-            if not selected_position:
-                st.info("Please select a position to proceed.")
-                return
+        selected_position = position_selector(positions=available_positions)
+        if selected_position and [pos for pos in selected_position if "red" in pos]:
+            st.info(
+                "This position is already occupied. Please select a different position."
+            )
+            return
+        if not selected_position:
+            st.info("Please select a position to proceed.")
+            return
     else:
         st.info("Please select a page to proceed.")
         return
@@ -138,7 +133,7 @@ def setup():
         "Pie Chart": {"Dimensions": 1, "Measures": 1, "Date Fields": 0},
         "Scatter Plot": {"Dimensions": 1, "Measures": 2, "Date Fields": 0},
         "Histogram": {"Dimensions": 0, "Measures": 1, "Date Fields": 0},
-        "Variance Comparison": {"Dimensions": 1, "Measures": 2, "Date Fields": 1},
+        "Variance Comparison": {"Dimensions": 1, "Measures": 1, "Date Fields": 1},
     }
 
     requirements = chart_requirements.get(st.session_state["chart_to_configure"], {})
@@ -205,7 +200,6 @@ def setup():
             }
 
     if st.session_state["chart_to_configure"] == "Bar Chart":
-
         fig = create_bar_chart_with_infinite_bars(
             data={
                 "bars": [
@@ -214,24 +208,23 @@ def setup():
                     },
                 ],
             },
-            title_of_chart=chart_title,
             xaxis_title=measures[0] if invert else dimensions[0] ,
             yaxis_title=dimensions[0] if invert else measures[0],
             orientation = "h" if invert else "v",
             text_anotation="Preview example"
         )
         st.plotly_chart(fig)
-    if st.session_state["chart_to_configure"] == "Variance Comparison":
+    elif st.session_state["chart_to_configure"] == "Variance Comparison":
         fig = create_variance_comparison_bar_chart(
             total_this_year=float(total_this_year),
             total_prior_year=float(total_last_year),
             xaxis_title=measures[0],
-            title=chart_title,
             prior_year=this_year - 1,
             this_year=this_year,
+            additional_info=None
         )
         st.plotly_chart(fig)
-    if st.session_state["chart_to_configure"] == "Line Chart":
+    elif st.session_state["chart_to_configure"] == "Line Chart":
         fig = create_line_chart_with_infinite_lines(
             data={
                 "lines": [
@@ -241,7 +234,6 @@ def setup():
                 ],
             
             },
-            title_of_chart=chart_title,
             xaxis_title=dimensions[0],
             yaxis_title=measures[0],
             annotation="Preview example"
@@ -265,15 +257,19 @@ def setup():
                 ],
                 
             },
-            title_of_chart=chart_title,
             annotation="Preview example"
         )
         st.plotly_chart(fig)
     elif st.session_state["chart_to_configure"] == "Choropleth Map":
         fig = create_choropleth_map(df, measures[0], dimensions[0], chart_title) 
         st.plotly_chart(fig)
+        
+    else:
+        st.info("No Preview Available")
     # Step 6: Save Chart Configuration
     if st.button("Save Chart Configuration", use_container_width=True):
+        if st.session_state["chart_to_configure"] == "Variance Comparison":
+            dimensions = None
         chart_config = {
             "chart_name": chart_title,
             "type": st.session_state["chart_to_configure"],
@@ -303,5 +299,5 @@ def setup():
         time.sleep(3)
         st.switch_page("./nav_bar.py")
 
-
-setup()
+if __name__ == "__main__":
+    setup()

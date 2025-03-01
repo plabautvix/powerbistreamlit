@@ -122,7 +122,10 @@ def view_pages(pages):
     st.sidebar.subheader("View Pages")
     if pages:
         container = False
-        if st.sidebar.toggle("Edit Mode :material/edit:", False):
+        edit_mode_is_enabled = st.sidebar.toggle("Edit Mode :material/edit:", False)
+        st.session_state["edit_mode_is_enabled"] = edit_mode_is_enabled
+        if edit_mode_is_enabled:
+            st.toast("Edit Mode Enabled :material/check_circle:")
             col1, col2 = st.columns([1, 4])
             with col1:
                 with st.popover(":green[Add Chart]", use_container_width=True):
@@ -141,6 +144,7 @@ def view_pages(pages):
         if page:
             if page.get("with_title"):
                 st.title(page["title"], anchor=False)
+            st.session_state["name_of_actually_page"] = page["title"]
             if not page.get("charts"):
                 st.info("This page has no charts yet.")
             else:
@@ -219,7 +223,6 @@ def choropleth_map():
         df,
         measure="GDP (BILLIONS)",
         location_column="COUNTRY",
-        title="Choropleth Map",
     )
     st.plotly_chart(fig)
 
@@ -378,7 +381,7 @@ def portfolio_page():
             else:
                 st.write("**Field Requirements:** Not specified")
             if title == "Variance Comparison":
-                st.plotly_chart(chart_function(100,80, xaxis_title=title, title=title, prior_year=2019, this_year=2020))
+                st.plotly_chart(chart_function(100,80, xaxis_title=title, prior_year=2019, this_year=2020, additional_info=None))
             else:
                 chart_function()  # Render the chart
 

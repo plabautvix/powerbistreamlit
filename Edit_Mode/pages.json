@@ -3,11 +3,10 @@
         "title": "Test Page",
         "charts": [
             {
-                "chart_name": "test",
-                "type": "Choropleth Map",
+                "chart_name": null,
+                "type": "Bar Chart",
                 "dimension": [
-                    "ShipToState",
-                    "ShipToCity"
+                    "Salesperson"
                 ],
                 "measure": [
                     "Sales"
@@ -15,20 +14,14 @@
                 "date_column": [
                     "InvDate"
                 ],
-                "filter_dimensions": [
-                    "ShipToState",
-                    "ShipToCity"
-                ],
                 "dynamic_measures": [
                     "Sales"
                 ],
-                "default_dynamic_measure": "Sales",
                 "file_path": "./database\\Sales_Invoice.parquet",
                 "position": [
-                    "ROW1, COL2"
+                    "ROW1, COL1"
                 ],
-                "invert": false,
-                "chart_id": "5edef4b402b94c9d953d97091a4b780b"
+                "chart_id": "d8dd7e01-0abe-4561-ab9a-5c1248d90e9e"
             }
         ],
         "with_title": true
