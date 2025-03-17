@@ -2,6 +2,82 @@
     {
         "title": "Test Page",
         "charts": [
+            {
+                "chart_name": "test",
+                "type": "Slicer Chart",
+                "dimension": [
+                    "TranDesc",
+                    "Descr3"
+                ],
+                "measure": [
+                    "LineNo",
+                    "Discount"
+                ],
+                "date_column": [
+                    "InvDate"
+                ],
+                "dynamic_measures": [
+                    "LineNo",
+                    "Discount"
+                ],
+                "file_path": "./database\\Sales_Invoice.parquet",
+                "position": [
+                    "ROW1, COL1",
+                    "ROW1, COL2",
+                    "ROW1, COL3"
+                ],
+                "chart_id": "27ac6aac-a64f-454c-b5ab-a2424f063061"
+            },
+            {
+                "chart_name": "testing",
+                "type": "Bar Chart",
+                "dimension": [
+                    "Salesperson"
+                ],
+                "measure": [
+                    "TranAmt",
+                    "TranCost",
+                    "LineUnitPrice",
+                    "FQ_NoInt1"
+                ],
+                "date_column": [],
+                "dynamic_measures": [
+                    "TranAmt",
+                    "TranCost",
+                    "LineUnitPrice",
+                    "FQ_NoInt1"
+                ],
+                "file_path": "./database\\Sales_Invoice.parquet",
+                "position": [
+                    "ROW2, COL1"
+                ],
+                "chart_id": "56a94162-c2f7-4498-b966-63a8b697fbd3"
+            },
+            {
+                "chart_name": "Testando 123...",
+                "type": "Variance Comparison",
+                "dimension": [
+                    "city",
+                    "PageTitle",
+                    "Pages",
+                    "Week-Year"
+                ],
+                "measure": [
+                    "PageViews"
+                ],
+                "date_column": [
+                    "Date"
+                ],
+                "dynamic_measures": [
+                    "PageViews"
+                ],
+                "file_path": "./database\\google_analytics.parquet",
+                "position": [
+                    "ROW2, COL2",
+                    "ROW2, COL3"
+                ],
+                "chart_id": "b773ff55-17b9-4826-983c-69b3cf91efed"
+            }
         ],
         "with_title": true
     }

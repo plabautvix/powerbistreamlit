@@ -125,7 +125,7 @@ def view_pages(pages):
         edit_mode_is_enabled = st.sidebar.toggle("Edit Mode :material/edit:", False)
         st.session_state["edit_mode_is_enabled"] = edit_mode_is_enabled
         if edit_mode_is_enabled:
-            st.toast("Edit Mode Enabled :material/check_circle:")
+            st.toast("Edit Mode is Enabled :material/check_circle:")
             col1, col2 = st.columns([1, 4])
             with col1:
                 with st.popover(":green[Add Chart]", use_container_width=True):
