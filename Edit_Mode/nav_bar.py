@@ -6,6 +6,7 @@ import pandas as pd
 import streamlit as st
 import os
 import pages_data
+from examples import Examples
 from utils import (
     create_bar_chart_with_infinite_bars,
     render_markdown,
@@ -117,6 +118,7 @@ def delete_chart(pages, selected_page, page):
         st.success(f"Chart {selected_chart['chart_name']} deleted.")
         time.sleep(2)
         st.rerun()
+
 def view_pages(pages):
     """Handles displaying and rendering pages."""
     st.sidebar.subheader("View Pages")
@@ -124,18 +126,19 @@ def view_pages(pages):
         container = False
         edit_mode_is_enabled = st.sidebar.toggle("Edit Mode :material/edit:", False)
         st.session_state["edit_mode_is_enabled"] = edit_mode_is_enabled
-        if edit_mode_is_enabled:
-            st.toast("Edit Mode is Enabled :material/check_circle:")
-            col1, col2 = st.columns([1, 4])
-            with col1:
-                with st.popover(":green[Add Chart]", use_container_width=True):
-                    portfolio_page()
-            with col2:
-                with st.popover(":red[Delete Chart]", use_container_width=True):
-                    container = st.container()
+
         selected_page = st.sidebar.selectbox(
             "Select Page", [page["title"] for page in pages], index=0
         )
+        
+        
+        if edit_mode_is_enabled:
+            st.toast("Edit Mode is Enabled :material/check_circle:")
+            col1, col2 = st.columns([1, 4])
+            render_button_for_add_chart()
+            with col2:
+                with st.popover(":red[Delete Chart]", use_container_width=True):
+                    container = st.container()
         st.session_state["last_page_selected"] = selected_page
         page = next((p for p in pages if p["title"] == selected_page), None)
         if not container is False:
@@ -172,157 +175,12 @@ def view_pages(pages):
     else:
         st.sidebar.info("No pages available. Please create one in Setup Mode.")
 
-# Chart functions
-def bar_chart():
-    fig = px.bar(category_df, x="Category", y="Values", title="Bar Chart")
-    st.plotly_chart(fig)
 
-def slicer_chart():
-    st.dataframe(df, use_container_width=True, hide_index=True)
+def render_button_for_add_chart():
+    
+    with st.sidebar.popover("", use_container_width=True, icon=":material/add_chart:"):
+        portfolio_page()
 
-def line_chart():
-    fig = px.line(df, title="Line Chart", labels={"index": "Index", "value": "Value"})
-    st.plotly_chart(fig)
-
-
-def pie_chart():
-    fig = px.pie(category_df, names="Category", values="Values", title="Pie Chart")
-    st.plotly_chart(fig)
-
-
-def scatter_plot():
-    fig = px.scatter(
-        df, x="A", y="B", title="Scatter Plot", labels={"A": "X-axis", "B": "Y-axis"}
-    )
-    st.plotly_chart(fig)
-
-
-def histogram():
-    fig = px.histogram(df, x="A", title="Histogram", labels={"A": "Values"})
-    st.plotly_chart(fig)
-
-
-def box_plot():
-    fig = px.box(df, title="Box Plot")
-    st.plotly_chart(fig)
-
-
-def heatmap():
-    fig = go.Figure(data=go.Heatmap(z=df.corr().values, x=df.columns, y=df.columns))
-    fig.update_layout(title="Heatmap", xaxis_title="Features", yaxis_title="Features")
-    st.plotly_chart(fig)
-
-
-def area_chart():
-    fig = px.area(df, title="Area Chart")
-    st.plotly_chart(fig)
-
-def choropleth_map():
-    df = pd.read_csv("https://raw.githubusercontent.com/plotly/datasets/master/2014_world_gdp_with_codes.csv")
-    fig = create_choropleth_map(
-        df,
-        measure="GDP (BILLIONS)",
-        location_column="COUNTRY",
-    )
-    st.plotly_chart(fig)
-
-def radar_chart():
-    categories = ["A", "B", "C"]
-    values = df.mean().values.tolist()
-    fig = go.Figure()
-    fig.add_trace(
-        go.Scatterpolar(r=values, theta=categories, fill="toself", name="Average")
-    )
-    fig.update_layout(title="Radar Chart")
-    st.plotly_chart(fig)
-
-
-def bubble_chart():
-    # Ensure 'C' values are non-negative for the 'size' parameter
-    df["C"] = df["C"].abs()  # Take the absolute value of column 'C'
-
-    # Create a bubble chart using non-negative sizes
-    fig = px.scatter(
-        df,
-        x="A",
-        y="B",
-        size="C",  # Size must be non-negative
-        title="Bubble Chart",
-        labels={"A": "X-axis", "B": "Y-axis", "C": "Size"},
-    )
-    st.plotly_chart(fig)
-
-
-def donut_chart():
-    fig = px.pie(
-        category_df, names="Category", values="Values", hole=0.4, title="Donut Chart"
-    )
-    st.plotly_chart(fig)
-
-
-def candlestick_chart():
-    random_data = pd.DataFrame(
-        {
-            "Date": pd.date_range("2023-01-01", periods=50),
-            "Open": np.random.rand(50),
-            "High": np.random.rand(50) + 1,
-            "Low": np.random.rand(50) - 1,
-            "Close": np.random.rand(50),
-        }
-    )
-    fig = go.Figure(
-        data=[
-            go.Candlestick(
-                x=random_data["Date"],
-                open=random_data["Open"],
-                high=random_data["High"],
-                low=random_data["Low"],
-                close=random_data["Close"],
-            )
-        ]
-    )
-    fig.update_layout(title="Candlestick Chart")
-    st.plotly_chart(fig)
-
-
-def violin_plot():
-    fig = px.violin(df, y="A", title="Violin Plot")
-    st.plotly_chart(fig)
-
-
-def density_contour():
-    fig = px.density_contour(df, x="A", y="B", title="Density Contour")
-    st.plotly_chart(fig)
-
-
-def line_area_combined():
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df.index, y=df["A"], mode="lines", name="Line"))
-    fig.add_trace(go.Scatter(x=df.index, y=df["B"], fill="tozeroy", name="Area"))
-    fig.update_layout(title="Line and Area Combined Chart")
-    st.plotly_chart(fig)
-
-
-def scatter_3d():
-    fig = px.scatter_3d(df, x="A", y="B", z="C", title="3D Scatter Plot")
-    st.plotly_chart(fig)
-
-
-def bar_stacked():
-    fig = px.bar(df, title="Stacked Bar Chart", barmode="stack")
-    st.plotly_chart(fig)
-
-
-def treemap():
-    fig = px.treemap(category_df, path=["Category"], values="Values", title="Treemap")
-    st.plotly_chart(fig)
-
-
-def sunburst():
-    fig = px.sunburst(
-        category_df, path=["Category"], values="Values", title="Sunburst Chart"
-    )
-    st.plotly_chart(fig)
 
 
 # Portfolio Page
@@ -380,10 +238,8 @@ def portfolio_page():
                 st.write(f"**Field Requirements:** {requirements_text}")
             else:
                 st.write("**Field Requirements:** Not specified")
-            if title == "Variance Comparison":
-                st.plotly_chart(chart_function(100,80, xaxis_title=title, prior_year=2019, this_year=2020, additional_info=None))
-            else:
-                chart_function()  # Render the chart
+
+            chart_function()  # Render the chart
 
             # Add button below each chart
             if st.button(f"Add '{title}'", key=f"add_{title}"):
@@ -392,30 +248,32 @@ def portfolio_page():
                 cadastre_form()
                 # st.rerun()
 
+    
+    examples = Examples(category_df, df)
     # Group charts into rows of 3
     chart_functions = [
-        ("Bar Chart", bar_chart),
-        ("Variance Comparison", create_variance_comparison_bar_chart),
-        ("Slicer Chart", slicer_chart),
-        ("Choropleth Map", choropleth_map),
-        ("Line Chart", line_chart),
-        ("Pie Chart", pie_chart),
-        ("Scatter Plot", scatter_plot),
-        ("Histogram", histogram),
-        ("Box Plot", box_plot),
-        ("Heatmap", heatmap),
-        ("Area Chart", area_chart),
-        ("Radar Chart", radar_chart),
-        ("Bubble Chart", bubble_chart),
-        ("Donut Chart", donut_chart),
-        ("Candlestick Chart", candlestick_chart),
-        ("Violin Plot", violin_plot),
-        ("Density Contour", density_contour),
-        ("Line and Area Combined Chart", line_area_combined),
-        ("3D Scatter Plot", scatter_3d),
-        ("Stacked Bar Chart", bar_stacked),
-        ("Treemap", treemap),
-        ("Sunburst Chart", sunburst),
+        ("Bar Chart", examples.bar_chart),
+        ("Variance Comparison", examples.create_variance_comparison_bar_chart),
+        ("Slicer Chart", examples.slicer_chart),
+        ("Choropleth Map", examples.choropleth_map),
+        ("Line Chart", examples.line_chart),
+        ("Pie Chart", examples.pie_chart),
+        ("Scatter Plot", examples.scatter_plot),
+        ("Histogram", examples.histogram),
+        ("Box Plot", examples.box_plot),
+        ("Heatmap", examples.heatmap),
+        ("Area Chart", examples.area_chart),
+        ("Radar Chart", examples.radar_chart),
+        ("Bubble Chart", examples.bubble_chart),
+        ("Donut Chart", examples.donut_chart),
+        ("Candlestick Chart", examples.candlestick_chart),
+        ("Violin Plot", examples.violin_plot),
+        ("Density Contour", examples.density_contour),
+        ("Line and Area Combined Chart", examples.line_area_combined),
+        ("3D Scatter Plot", examples.scatter_3d),
+        ("Stacked Bar Chart", examples.bar_stacked),
+        ("Treemap", examples.treemap),
+        ("Sunburst Chart", examples.sunburst),
 
     ]
 

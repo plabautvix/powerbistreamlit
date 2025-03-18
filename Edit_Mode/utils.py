@@ -16,7 +16,7 @@ def render_markdown():
         unsafe_allow_html=True,
     )
 
-def create_bar_chart_with_infinite_bars(data: dict, xaxis_title, yaxis_title, text_anotation, orientation) -> go.Figure:
+def create_bar_chart_with_infinite_bars(data: dict, xaxis_title, yaxis_title, orientation, text_anotation = None) -> go.Figure:
     fig = go.Figure()
     for bar in data.get("bars", []):
         fig.add_trace(
@@ -69,7 +69,6 @@ def create_bar_chart_with_filters(chart: dict, df):
         xaxis_title=selected_measure if chart.get("invert") else selected_dimension,
         yaxis_title=selected_dimension if chart.get("invert") else selected_measure,
         orientation="h" if chart.get("invert") else "v",
-        text_anotation=optional_info
     )
     st.plotly_chart(fig, use_container_width=True, key=f"{chart['chart_id']}_chart", on_select=lambda : None, config={'displayModeBar': True})
     return fig
@@ -135,7 +134,6 @@ def render_form(chart: dict, df: pd.DataFrame):
                     prior_year_quantity = df[df["Year"] == prior_year][selected_measure].sum()
                     this_year_quantity = df[df["Year"] == this_year][selected_measure].sum()
                     if prior_year > this_year:
-                        st.form_submit_button("Apply Filter", use_container_width=True)
                         st.error("Prior Year must be less than This Year")
                         st.stop()
                     optional_info = {
@@ -302,7 +300,7 @@ def create_filters(df, path, id_chart):
     optional_info = {}
     time_unit = st.segmented_control(
         "Select Time Unit",
-        ["Year", "Month", "Week", "Day"],
+        ["Year", "Month", "Day"],
         key=f"time_unit_{id_chart}",
         default="Year",
     )
@@ -326,16 +324,7 @@ def create_filters(df, path, id_chart):
         if "All" not in selected_month:
             optional_info["<em>Months</em>"] = selected_month
             df = df[df["Month_Display"].isin(selected_month)]
-    elif time_unit == "Week":
-        selected_week = st.multiselect(
-            "Select Week",
-            ["All", *sorted(df["Week_Year"].dropna().unique())],
-            default="All",
-            key=f"selected_week_{id_chart}",
-        )
-        if "All" not in selected_week:
-            optional_info["<em>Weeks</em>"] = selected_week
-            df = df[df["Week_Year"].isin(selected_week)]
+
     elif time_unit == "Day":
         selected_day = st.date_input(
             "Select Day",
@@ -353,7 +342,7 @@ def create_filters(df, path, id_chart):
     return df, optional_info
 
 def render_chart_with_base_type_of_chart(chart):
-    st.subheader(chart["chart_name"], divider=True, anchor=False)
+    st.subheader(chart["chart_name"], divider="grey", anchor=False)
     df = read_parquet(chart["file_path"], chart.get("date_column", False))
     if chart["type"] == "Bar Chart":
         fig = create_bar_chart_with_filters(chart, df)
@@ -488,7 +477,7 @@ def create_choropleth_map(df: pd.DataFrame, measure: str, location_column: str, 
 
 def create_choropleth_map_with_filters(chart: dict, df: pd.DataFrame):
     filtered_df, selected_dimension, selected_measure, optional_info, _ = render_form(chart, df)
-    fig = create_choropleth_map(filtered_df, selected_measure, chart["dimension"][0], annotation=optional_info)
+    fig = create_choropleth_map(filtered_df, selected_measure, chart["dimension"][0])
     st.plotly_chart(fig, use_container_width=True, key=f"{chart['chart_id']}_chart", on_select=lambda : None)
     return fig
 def create_line_chart_with_infinite_lines(data: dict, xaxis_title, yaxis_title, annotation) -> go.Figure:
@@ -533,7 +522,6 @@ def create_line_chart_with_filters(chart: dict, df):
         data={"lines": [{"x": filtered_df[chart.get("dimension")[0]], "y": filtered_df[selected_measure], "marker_color": "blue"}]},
         xaxis_title=chart.get("dimension")[0],
         yaxis_title=selected_measure,
-        annotation=optional_info
     )
     st.plotly_chart(fig, use_container_width=True, key=f"{chart['chart_id']}_chart", on_select=lambda : None)
     return fig
@@ -571,7 +559,6 @@ def create_pie_chart_with_filters(chart: dict, df):
     filtered_df, selected_dimension, selected_measure, optional_info, _ = render_form(chart, df)
     fig = create_pie_chart_with_infinite_slices(
         data={"slices": [{"labels": filtered_df[chart.get("dimension")[0]], "values": filtered_df[selected_measure], "marker_colors": ["blue", "red", "green", "yellow"]}]},
-        annotation=optional_info
     )
     st.plotly_chart(fig, use_container_width=True, key=f"{chart['chart_id']}_chart", on_select=lambda : None)
     return fig
@@ -615,18 +602,13 @@ def create_scatter_chart_with_filters(chart: dict, df):
         data={"scatters": [{"x": filtered_df[chart.get("dimension")[0]], "y": filtered_df[selected_measure], "marker_color": "blue"}]},
         xaxis_title=chart.get("dimension")[0],
         yaxis_title=selected_measure,
-        annotation=optional_info
     )
     st.plotly_chart(fig, use_container_width=True, key=f"{chart['chart_id']}_chart", on_select=lambda : None)
     return fig
+
 @fragment
 def create_slicer_chart(chart, df):
     filtered_df, _, _, optional_info,col_2  = render_form(chart, df)
-    with col_2:
-        if optional_info:
-            with st.container(height=80, border=False):
-                st.markdown(optional_info, unsafe_allow_html=True)
-
     st.dataframe(filtered_df, hide_index=True, use_container_width=True, height=500)
 
 @fragment
@@ -638,11 +620,11 @@ def create_variance_comparison_bar_chart_with_filters(chart, df):
         xaxis_title=measure,
         prior_year=optional_info["prior_year"],
         this_year=optional_info["this_year"],
-        additional_info=optional_info["additional_infos"]
     )
     st.plotly_chart(fig, use_container_width=True, key=f"{chart['chart_id']}_chart", on_select=lambda : None)
     return fig
-def create_variance_comparison_bar_chart(total_this_year: float, total_prior_year: float, xaxis_title: str, prior_year: int, this_year: int, additional_info: str) -> go.Figure:
+
+def create_variance_comparison_bar_chart(total_this_year: float, total_prior_year: float, xaxis_title: str, prior_year: int, this_year: int, additional_info: str = None) -> go.Figure:
     variance = total_this_year - total_prior_year
     variance_percentage = (variance / total_prior_year) * 100 if total_prior_year != 0 else float("inf")
     total_this_year_fmt = f"{total_this_year:,.2f}"
@@ -696,7 +678,7 @@ def create_variance_comparison_bar_chart(total_this_year: float, total_prior_yea
         margin=dict(l=10, r=10, t=120, b=60)
     )
     fig.add_annotation(
-        text=f"Prior Year: {prior_year} | This Year: {this_year} <br> {additional_info if additional_info else ''}",
+        text=f"Prior Year: {prior_year} | This Year: {this_year} <br>",
         xref="paper",
         yref="paper",
         x=0.05,
