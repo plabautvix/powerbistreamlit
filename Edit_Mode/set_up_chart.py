@@ -4,7 +4,15 @@ import pandas as pd
 import plotly.express as px
 import os
 import json
-from utils import create_bar_chart_with_infinite_bars, render_markdown, create_line_chart_with_infinite_lines, create_pie_chart_with_infinite_slices, create_variance_comparison_bar_chart,create_year_and_month_week_and_day_columns, create_choropleth_map
+from utils import (
+    create_bar_chart_with_infinite_bars,
+    render_markdown,
+    create_line_chart_with_infinite_lines,
+    create_pie_chart_with_infinite_slices,
+    create_variance_comparison_bar_chart,
+    create_year_and_month_week_and_day_columns,
+    create_choropleth_map,
+)
 from components.positions_component.src.streamlit_component_x import position_selector
 from datetime import datetime
 
@@ -99,7 +107,11 @@ def setup():
     st.subheader("Step 2: Select Page and Position")
     pages = load_pages()
     page_titles = [page["title"] for page in pages]
-    selected_page = st.selectbox("Select Page to Publish Chart", options=page_titles, index=page_titles.index(st.session_state["last_page_selected"]))
+    selected_page = st.selectbox(
+        "Select Page to Publish Chart",
+        options=page_titles,
+        index=page_titles.index(st.session_state["last_page_selected"]),
+    )
     if selected_page:
         available_positions = get_available_positions(selected_page)
         if not available_positions:
@@ -142,17 +154,12 @@ def setup():
     ).columns.tolist()
     available_measures = df.select_dtypes(include=["number"]).columns.tolist()
     available_date_fields = df.select_dtypes(include=["datetime"]).columns.tolist()
-    dimensions = st.multiselect("Select Dimensions", available_dimensions)
+    dimension = None
+    if st.session_state["chart_to_configure"] != "Variance Comparison":
+        dimension = st.selectbox("Select Dimension", available_dimensions)
+    dimensions = st.multiselect("Select Filters", available_dimensions)
     measures = st.multiselect("Select Measures", available_measures)
     date_fields = st.multiselect("Select Date Fields", available_date_fields)
-
-    # Enforce required fields
-    if st.session_state["chart_to_configure"] != "Variance Comparison":
-        if len(dimensions) < requirements.get("Dimensions", 0):
-            st.warning(
-                f"This chart requires at least {requirements['Dimensions']} dimension(s)."
-            )
-            return
 
     if len(measures) < requirements.get("Measures", 0):
         st.warning(
@@ -172,31 +179,41 @@ def setup():
         st.subheader("Step 4: Data Preview")
 
     if st.session_state["chart_to_configure"] == "Slicer Chart":
+        if dimension not in dimensions:
+            dimensions.append(dimension)
         df = df.groupby(dimensions).agg({measures[0]: "sum"}).reset_index()
     elif st.session_state["chart_to_configure"] != "Variance Comparison":
-        df = df.groupby(dimensions[0])[measures[0]].sum().reset_index()
+        if dimension not in dimensions:
+            dimensions.append(dimension)
+        df = df.groupby(dimension)[measures[0]].sum().reset_index()
         st.dataframe(df, use_container_width=True, hide_index=True)
     elif st.session_state["chart_to_configure"] == "Variance Comparison":
         create_year_and_month_week_and_day_columns(df, date_fields[0])
-        this_year =  df["Year"].max()
+        this_year = df["Year"].max()
         total_this_year = df[(df["Year"] == this_year)][measures[0]].sum()
         total_last_year = df[(df["Year"] == this_year - 1)][measures[0]].sum()
     # Step 6: Preview the chart
     invert = False
-    st.subheader("Step 5: Chart Preview" if st.session_state["chart_to_configure"] != "Variance Comparison" else "Step 4: Chart Preview")
-    if st.session_state["chart_to_configure"] == "Line Chart" or st.session_state["chart_to_configure"] == "Bar Chart":
+    st.subheader(
+        "Step 5: Chart Preview"
+        if st.session_state["chart_to_configure"] != "Variance Comparison"
+        else "Step 4: Chart Preview"
+    )
+    if (
+        st.session_state["chart_to_configure"] == "Line Chart"
+        or st.session_state["chart_to_configure"] == "Bar Chart"
+    ):
         invert = st.toggle("Invert chart")
     if st.session_state["chart_to_configure"] != "Variance Comparison":
         chart_data = {
-            "x": df[dimensions[0]],
+            "x": df[dimension],
             "y": df[measures[0]],
         }
 
-        
         if invert:
             chart_data = {
                 "x": df[measures[0]],
-                "y": df[dimensions[0]],
+                "y": df[dimension],
             }
 
     if st.session_state["chart_to_configure"] == "Bar Chart":
@@ -208,10 +225,10 @@ def setup():
                     },
                 ],
             },
-            xaxis_title=measures[0] if invert else dimensions[0] ,
-            yaxis_title=dimensions[0] if invert else measures[0],
-            orientation = "h" if invert else "v",
-            text_anotation="Preview example"
+            xaxis_title=measures[0] if invert else dimension,
+            yaxis_title=dimension if invert else measures[0],
+            orientation="h" if invert else "v",
+            text_anotation="Preview example",
         )
         st.plotly_chart(fig)
     elif st.session_state["chart_to_configure"] == "Variance Comparison":
@@ -221,7 +238,7 @@ def setup():
             xaxis_title=measures[0],
             prior_year=this_year - 1,
             this_year=this_year,
-            additional_info=None
+            additional_info=None,
         )
         st.plotly_chart(fig)
     elif st.session_state["chart_to_configure"] == "Line Chart":
@@ -232,11 +249,10 @@ def setup():
                         **chart_data,
                     },
                 ],
-            
             },
-            xaxis_title=dimensions[0],
+            xaxis_title=dimension,
             yaxis_title=measures[0],
-            annotation="Preview example"
+            annotation="Preview example",
         )
         st.plotly_chart(fig)
 
@@ -245,7 +261,7 @@ def setup():
 
     elif st.session_state["chart_to_configure"] == "Pie Chart":
         chart_data = {
-            "labels": df[dimensions[0]],
+            "labels": df[dimension],
             "values": df[measures[0]],
         }
         fig = create_pie_chart_with_infinite_slices(
@@ -255,15 +271,14 @@ def setup():
                         **chart_data,
                     },
                 ],
-                
             },
-            annotation="Preview example"
+            annotation="Preview example",
         )
         st.plotly_chart(fig)
     elif st.session_state["chart_to_configure"] == "Choropleth Map":
-        fig = create_choropleth_map(df, measures[0], dimensions[0], chart_title) 
+        fig = create_choropleth_map(df, measures[0], dimension, chart_title)
         st.plotly_chart(fig)
-        
+
     else:
         st.info("No Preview Available")
     # Step 6: Save Chart Configuration
@@ -274,6 +289,7 @@ def setup():
             "chart_name": chart_title,
             "type": st.session_state["chart_to_configure"],
             "dimension": dimensions,
+            "main_dimension": dimension,
             "measure": measures,
             "date_column": date_fields,
             "filter_dimensions": dimensions,
@@ -282,8 +298,9 @@ def setup():
             "file_path": file_path,
             "position": selected_position,
             "invert": invert,
-            }
+        }
         import uuid
+
         for page in pages:
             if page["title"] == selected_page:
                 if "charts" not in page:
@@ -298,6 +315,7 @@ def setup():
         st.success(f"Chart '{chart_title}' has been configured and saved!")
         time.sleep(3)
         st.switch_page("./nav_bar.py")
+
 
 if __name__ == "__main__":
     setup()

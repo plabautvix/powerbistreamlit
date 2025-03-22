@@ -6,6 +6,7 @@ import plotly.express as px
 from streamlit import fragment, popover
 import pandas as pd
 
+
 def render_markdown():
     st.markdown(
         """
@@ -16,7 +17,10 @@ def render_markdown():
         unsafe_allow_html=True,
     )
 
-def create_bar_chart_with_infinite_bars(data: dict, xaxis_title, yaxis_title, orientation, text_anotation = None) -> go.Figure:
+
+def create_bar_chart_with_infinite_bars(
+    data: dict, xaxis_title, yaxis_title, orientation, text_anotation=None
+) -> go.Figure:
     fig = go.Figure()
     for bar in data.get("bars", []):
         fig.add_trace(
@@ -34,9 +38,9 @@ def create_bar_chart_with_infinite_bars(data: dict, xaxis_title, yaxis_title, or
         bargap=0.2,
         xaxis_title=xaxis_title,
         yaxis_title=yaxis_title,
-        margin=dict(l=10, r=10, t=120, b=100)
+        margin=dict(l=10, r=10, t=120, b=100),
     )
-    fig.update_layout(clickmode='event+select')
+    fig.update_layout(clickmode="event+select")
     if text_anotation:
         fig.add_annotation(
             text=text_anotation,
@@ -48,13 +52,16 @@ def create_bar_chart_with_infinite_bars(data: dict, xaxis_title, yaxis_title, or
             font=dict(size=12, color="black"),
             align="left",
             xanchor="left",
-            yanchor="top"
+            yanchor="top",
         )
     return fig
 
+
 @fragment
 def create_bar_chart_with_filters(chart: dict, df):
-    filtered_df, selected_dimension, selected_measure, optional_info, _ = render_form(chart, df)
+    filtered_df, selected_dimension, selected_measure, optional_info, _ = render_form(
+        chart, df
+    )
     chart_data = {
         "x": filtered_df[selected_dimension],
         "y": filtered_df[selected_measure],
@@ -70,8 +77,15 @@ def create_bar_chart_with_filters(chart: dict, df):
         yaxis_title=selected_dimension if chart.get("invert") else selected_measure,
         orientation="h" if chart.get("invert") else "v",
     )
-    st.plotly_chart(fig, use_container_width=True, key=f"{chart['chart_id']}_chart", on_select=lambda : None, config={'displayModeBar': True})
+    st.plotly_chart(
+        fig,
+        use_container_width=True,
+        key=f"{chart['chart_id']}_chart",
+        on_select=lambda: None,
+        config={"displayModeBar": True},
+    )
     return fig
+
 
 def render_form(chart: dict, df: pd.DataFrame):
     optional_info = ""
@@ -80,7 +94,9 @@ def render_form(chart: dict, df: pd.DataFrame):
 
     with col_1.popover("Filter"):
         if chart.get("date_column") and chart.get("type") != "Variance Comparison":
-            df, optional_info_dict = create_filters(df, chart["file_path"], chart["chart_id"])
+            df, optional_info_dict = create_filters(
+                df, chart["file_path"], chart["chart_id"]
+            )
             for key, value in optional_info_dict.items():
                 if "Selected Days" in key:
                     optional_info += f"{key}: {value} <br>"
@@ -90,72 +106,172 @@ def render_form(chart: dict, df: pd.DataFrame):
                 else:
                     optional_info += f"{key}: {', '.join(value) if isinstance(value, list) else value} <br>"
 
-        with st.container(  border=False):
+        with st.container(border=False):
             if not chart.get("dimension", None):
                 chart["dimension"] = []
             for dimension, i in zip(chart["dimension"], range(len(chart["dimension"]))):
+
+                if (
+                    f"default_dimension_{dimension}_{chart['chart_id']}"
+                    not in st.session_state
+                ):
+                    st.session_state[
+                        f"default_dimension_{dimension}_{chart['chart_id']}"
+                    ] = ["All"]
+
+                default_options = [
+                    "All",
+                    *df.sort_values(by=chart["date_column"])[dimension]
+                    .dropna()
+                    .unique()
+                    .tolist(),
+                ]
+
+                if st.session_state.get(
+                    f"flag_year_month_updated_{chart['chart_id']}", False
+                ):
+                    options = default_options
+                    new_default_fields = []
+                    for option in st.session_state.get(
+                        f"last_selected_dimension_{dimension}_{chart['chart_id']}",
+                        ["All"],
+                    ):
+                        if option in options:
+                            new_default_fields.append(option)
+                    st.session_state[
+                        f"default_dimension_{dimension}_{chart['chart_id']}"
+                    ] = new_default_fields
+
+                if (
+                    st.session_state.get(
+                        f"flag_dimension_updated_{chart['chart_id']}", False
+                    )
+                    and st.session_state.get("dimension_updated", False) != dimension
+                ):
+                    new_default_values_for_dimension: list[str] = []
+                    for option in st.session_state.get(
+                        f"last_selected_dimension_{dimension}_{chart['chart_id']}",
+                        ["All"],
+                    ):
+                        if option in default_options:
+                            new_default_values_for_dimension.append(option)
+
+                    st.session_state[
+                        f"default_dimension_{dimension}_{chart['chart_id']}"
+                    ] = new_default_values_for_dimension
+
                 selected_dimension = st.multiselect(
                     f"Select {dimension}",
-                    ["All", *df.sort_values(by=chart["date_column"])[dimension].dropna().unique().tolist()],
+                    default_options,
                     key=f"{chart['chart_id']}_dimension{i}",
-                    default=["All"],
+                    default=st.session_state[
+                        f"default_dimension_{dimension}_{chart['chart_id']}"
+                    ],
                 )
+                if (
+                    st.session_state.get(
+                        f"last_selected_dimension_{dimension}_{chart['chart_id']}",
+                        ["All"]
+                    )
+                    != selected_dimension
+                ):
+                    st.session_state[
+                        f"last_selected_dimension_{dimension}_{chart['chart_id']}"
+                    ] = selected_dimension
+                    st.session_state[f"flag_dimension_updated_{chart['chart_id']}"] = (
+                        True
+                    )
+                    st.session_state["dimension_updated"] = dimension
+
+                st.session_state[
+                    f"last_selected_dimension_{dimension}_{chart['chart_id']}"
+                ] = selected_dimension
+
                 if "All" not in selected_dimension and selected_dimension:
                     optional_info += f"<em>{dimension.upper()}</em>: {', '.join(selected_dimension)} <br>"
                     df = df[df[dimension].isin(selected_dimension)]
                 elif not selected_dimension:
                     st.info("Please select at least one filter.")
+            st.session_state[f"flag_year_month_updated_{chart['chart_id']}"] = False
+            st.session_state[f"flag_dimension_updated_{chart['chart_id']}"] = False
             if chart.get("type") == "Bar Chart":
+                if chart.get("main_dimension") not in chart["dimension"]:
+                    chart["dimension"].insert(0, chart["main_dimension"])
                 selected_dimension = st.selectbox(
                     "Select Dimension",
                     chart["dimension"],
                     key=f"{chart['chart_id']}_dimension",
+                    index=chart["dimension"].index(chart.get("main_dimension", [])),
                 )
+
             selected_measure = st.selectbox(
-                "Select Measure",
-                chart["measure"],
-                key=f"{chart['chart_id']}_measure"
+                "Select Measure", chart["measure"], key=f"{chart['chart_id']}_measure"
             )
             if chart["type"] == "Variance Comparison":
                 df = df.sort_values(by="Year", ascending=False)
-                prior_year = st.selectbox(
-                    "Select Prior Year",
-                    df["Year"].unique(),
-                    key=f"{chart['chart_id']}_prior_year",
-                    index=df["Year"].unique().tolist().index(df["Year"].max()) + 1,
-                )
-                this_year = st.selectbox(
-                    "Select This Year",
-                    df["Year"].unique(),
-                    key=f"{chart['chart_id']}_this_year",
-                    index=df["Year"].unique().tolist().index(df["Year"].max()),
-                )
-                if prior_year and this_year:
-                    prior_year_quantity = df[df["Year"] == prior_year][selected_measure].sum()
-                    this_year_quantity = df[df["Year"] == this_year][selected_measure].sum()
-                    if prior_year > this_year:
-                        st.error("Prior Year must be less than This Year")
-                        st.stop()
-                    optional_info = {
-                        "prior_year_quantity": prior_year_quantity,
-                        "this_year_quantity": this_year_quantity,
-                        "prior_year": prior_year,
-                        "this_year": this_year,
-                        "additional_infos": optional_info
-                    }
+                try:
+                    prior_year = st.selectbox(
+                        "Select Prior Year",
+                        df["Year"].unique(),
+                        key=f"{chart['chart_id']}_prior_year",
+                        index=df["Year"].unique().tolist().index(df["Year"].max()) + 1,
+                    )
+                    this_year = st.selectbox(
+                        "Select This Year",
+                        df["Year"].unique(),
+                        key=f"{chart['chart_id']}_this_year",
+                        index=df["Year"].unique().tolist().index(df["Year"].max()),
+                    )
+                    if prior_year and this_year:
+                        prior_year_quantity = df[df["Year"] == prior_year][
+                            selected_measure
+                        ].sum()
+                        this_year_quantity = df[df["Year"] == this_year][
+                            selected_measure
+                        ].sum()
+                        if prior_year > this_year:
+                            st.error("Prior Year must be less than This Year")
+                            st.stop()
+                        optional_info = {
+                            "prior_year_quantity": prior_year_quantity,
+                            "this_year_quantity": this_year_quantity,
+                            "prior_year": prior_year,
+                            "this_year": this_year,
+                            "additional_infos": optional_info,
+                        }
+                except Exception:
+                    st.session_state.flag_error_variance_comparisson = True
 
             filtered_df = df
             if chart["type"] == "Bar Chart":
-                filtered_df = df.groupby(chart.get("dimension")[0])[selected_measure].sum().reset_index()
+                filtered_df = (
+                    df.groupby(selected_dimension)[selected_measure].sum().reset_index()
+                )
             elif chart["type"] == "Slicer Chart":
-                filtered_df = df.groupby(chart.get("dimension")).agg({selected_measure: "sum"}).reset_index()
-            elif chart["type"] != "Variance Comparison" and chart.get("dimension", None):
-                filtered_df = df.groupby(chart.get("dimension")[0])[selected_measure].sum().reset_index()
+                filtered_df = (
+                    df.groupby(chart.get("main_dimension"))
+                    .agg({selected_measure: "sum"})
+                    .reset_index()
+                )
+            elif chart["type"] != "Variance Comparison" and chart.get(
+                "main_dimension", None
+            ):
+                filtered_df = (
+                    df.groupby(chart.get("main_dimension"))[selected_measure]
+                    .sum()
+                    .reset_index()
+                )
             filtered_df = filtered_df.sort_values(by=selected_measure, ascending=False)
+    if st.session_state.get("flag_error_variance_comparisson", False):
+        st.session_state.flag_error_variance_comparisson = False
+        st.warning("Please select filter with range with minimum 2 years.")
+        st.stop()
     return filtered_df, selected_dimension, selected_measure, optional_info, col_2
 
+
 def extract_row_number(position):
-    return int(position[0].split(',')[0].replace('ROW', ''))
+    return int(position[0].split(",")[0].replace("ROW", ""))
+
 
 def create_rows(charts):
     charts.sort(key=lambda x: extract_row_number(x["position"]))
@@ -245,44 +361,105 @@ def create_rows(charts):
                     new_rows[row_number].append(chart["chart_id"])
                     new_rows["align_right"].append(row_number)
     for key, value in new_rows.items():
-        if isinstance(key, str) and (("align" in key) or ("priority" in key) or ("all" in key)):
+        if isinstance(key, str) and (
+            ("align" in key) or ("priority" in key) or ("all" in key)
+        ):
             continue
         elif len(value) == 1 and key in new_rows["all_lines"]:
             new_rows[key] = [(st.container(), value[0])]
-        elif len(value) == 1 and key in new_rows["align_left"] and key in new_rows["left_priority"]:
+        elif (
+            len(value) == 1
+            and key in new_rows["align_left"]
+            and key in new_rows["left_priority"]
+        ):
             new_rows[key] = st.columns((2, 1), gap="large")
             new_rows[key] = [(new_rows[key][0], value[0]), (new_rows[key][1],)]
-        elif len(value) == 2 and key not in new_rows["align_left"] and key not in new_rows["align_right"]:
+        elif (
+            len(value) == 2
+            and key not in new_rows["align_left"]
+            and key not in new_rows["align_right"]
+        ):
             columns = st.columns((1, 1), gap="large")
             new_rows[key] = [(columns[0], value[0]), (columns[1], value[1])]
-        elif len(value) == 2 and key in new_rows["align_left"] and key in new_rows["align_right"] and key not in new_rows["left_priority"] and key not in new_rows["right_priority"]:
+        elif (
+            len(value) == 2
+            and key in new_rows["align_left"]
+            and key in new_rows["align_right"]
+            and key not in new_rows["left_priority"]
+            and key not in new_rows["right_priority"]
+        ):
             columns = st.columns((1, 1, 1), gap="large")
-            new_rows[key] = [(columns[0], value[0]), (columns[1],), (columns[2], value[1])]
-        elif len(value) == 2 and key in new_rows["align_left"] and key not in new_rows["right_priority"]:
+            new_rows[key] = [
+                (columns[0], value[0]),
+                (columns[1],),
+                (columns[2], value[1]),
+            ]
+        elif (
+            len(value) == 2
+            and key in new_rows["align_left"]
+            and key not in new_rows["right_priority"]
+        ):
             columns = st.columns((1, 1), gap="large")
             new_rows[key] = [(columns[0], value[0]), (columns[1], value[1])]
-        elif len(value) == 2 and key in new_rows["align_right"] and key not in new_rows["left_priority"]:
+        elif (
+            len(value) == 2
+            and key in new_rows["align_right"]
+            and key not in new_rows["left_priority"]
+        ):
             columns = st.columns((1, 2), gap="large")
             new_rows[key] = [(columns[0], value[0]), (columns[1], value[1])]
-        elif len(value) == 1 and key in new_rows["align_right"] and key in new_rows["right_priority"]:
+        elif (
+            len(value) == 1
+            and key in new_rows["align_right"]
+            and key in new_rows["right_priority"]
+        ):
             new_rows[key] = st.columns((1, 2), gap="large")
             new_rows[key] = [(new_rows[key][0],), (new_rows[key][1], value[0])]
-        elif len(value) == 1 and key in new_rows["align_left"] and key in new_rows["left_priority"]:
+        elif (
+            len(value) == 1
+            and key in new_rows["align_left"]
+            and key in new_rows["left_priority"]
+        ):
             new_rows[key] = st.columns((2, 1), gap="large")
             new_rows[key] = [(new_rows[key][0], value[0]), (new_rows[key][1],)]
-        elif len(value) == 1 and key in new_rows["align_right"] and key not in new_rows["right_priority"]:
+        elif (
+            len(value) == 1
+            and key in new_rows["align_right"]
+            and key not in new_rows["right_priority"]
+        ):
             new_rows[key] = st.columns((1, 2), gap="large")
             new_rows[key] = [(new_rows[key][0],), (new_rows[key][1], value[0])]
-        elif len(value) == 1 and key in new_rows["align_left"] and key not in new_rows["left_priority"]:
+        elif (
+            len(value) == 1
+            and key in new_rows["align_left"]
+            and key not in new_rows["left_priority"]
+        ):
             new_rows[key] = st.columns((1, 1, 1), gap="large")
-            new_rows[key] = [(new_rows[key][0], value[0]), (new_rows[key][1],), (new_rows[key][2],)]
-        elif len(value) == 1 and key not in new_rows["align_left"] and key not in new_rows["align_right"]:
+            new_rows[key] = [
+                (new_rows[key][0], value[0]),
+                (new_rows[key][1],),
+                (new_rows[key][2],),
+            ]
+        elif (
+            len(value) == 1
+            and key not in new_rows["align_left"]
+            and key not in new_rows["align_right"]
+        ):
             new_rows[key] = st.columns((1, 1, 1), gap="large")
-            new_rows[key] = [(new_rows[key][0],), (new_rows[key][1], value[0]), (new_rows[key][2],)]
+            new_rows[key] = [
+                (new_rows[key][0],),
+                (new_rows[key][1], value[0]),
+                (new_rows[key][2],),
+            ]
         elif len(value) == 3:
             columns = st.columns((1, 1, 1), gap="large")
-            new_rows[key] = [(columns[0], value[0]), (columns[1], value[1]), (columns[2], value[2])]
+            new_rows[key] = [
+                (columns[0], value[0]),
+                (columns[1], value[1]),
+                (columns[2], value[2]),
+            ]
     return new_rows
+
 
 def create_year_and_month_week_and_day_columns(data, date_column):
     data[date_column] = pd.to_datetime(data[date_column], errors="coerce")
@@ -296,6 +473,7 @@ def create_year_and_month_week_and_day_columns(data, date_column):
     data["Month_Year"] = data[date_column].dt.strftime("%b, %Y")
     data["Week_Year"] = data[date_column].dt.strftime("%Y-W%U")
 
+
 def create_filters(df, path, id_chart):
     optional_info = {}
     time_unit = st.segmented_control(
@@ -304,23 +482,79 @@ def create_filters(df, path, id_chart):
         key=f"time_unit_{id_chart}",
         default="Year",
     )
+    if f"last_selected_time_unit_{id_chart}" not in st.session_state and time_unit:
+        st.session_state[f"last_selected_time_unit_{id_chart}"] = time_unit
+
     if time_unit == "Year" or time_unit == "Month" or time_unit == "Week":
+        if f"default_value_for_year_{id_chart}" not in st.session_state:
+            st.session_state[f"default_value_for_year_{id_chart}"] = ["All"]
+        if time_unit != st.session_state[
+            f"last_selected_time_unit_{id_chart}"
+        ] and st.session_state.get(f"last_year_selected_{id_chart}"):
+            st.session_state[f"last_selected_time_unit_{id_chart}"] = time_unit
+            st.session_state[f"default_value_for_year_{id_chart}"] = st.session_state[
+                f"last_year_selected_{id_chart}"
+            ]
+
+            if st.session_state.get(f"last_month_selected_{id_chart}", False):
+                st.session_state[f"last_selected_time_unit_{id_chart}"] = time_unit
+                for month in st.session_state[f"last_month_selected_{id_chart}"]:
+                    if month not in [
+            "All",
+            *sorted(
+                df["Month_Display"].dropna().unique(),
+                key=lambda x: pd.to_datetime(x, format="%b").month,
+            ),
+        ]:
+                        st.session_state[f"last_month_selected_{id_chart}"].remove(
+                            month
+                        )
+                st.session_state[f"default_selected_value_for_month_{id_chart}"] = (
+                    st.session_state[f"last_month_selected_{id_chart}"]
+                )
+
         selected_time_unit = st.multiselect(
             "Select Year",
             ["All", *sorted(df["Year"].dropna().unique())],
-            default="All",
+            default=st.session_state[f"default_value_for_year_{id_chart}"],
             key=f"selected_year_{id_chart}",
         )
+
+        if st.session_state.get(f"last_year_selected_{id_chart}") != selected_time_unit:
+            st.session_state[f"flag_year_month_updated_{id_chart}"] = True
+
+        st.session_state[f"last_year_selected_{id_chart}"] = selected_time_unit
+
         if "All" not in selected_time_unit:
             df = df[df["Year"].isin(selected_time_unit)]
-            optional_info["<em>Years</em>"] = [str(number) for number in selected_time_unit]
+            optional_info["<em>Years</em>"] = [
+                str(number) for number in selected_time_unit
+            ]
+
     if time_unit == "Month":
+        if f"default_selected_value_for_month_{id_chart}" not in st.session_state:
+            st.session_state[f"default_selected_value_for_month_{id_chart}"] = ["All"]
+
+        options_month = [
+            "All",
+            *sorted(
+                df["Month_Display"].dropna().unique(),
+                key=lambda x: pd.to_datetime(x, format="%b").month,
+            ),
+        ]
+        st.session_state[f"options_month_{id_chart}"] = options_month
         selected_month = st.multiselect(
             "Select Month",
-            ["All", *sorted(df["Month_Display"].dropna().unique(), key=lambda x: pd.to_datetime(x, format="%b").month)],
-            default="All",
+            options_month,
+            default=st.session_state[f"default_selected_value_for_month_{id_chart}"],
             key=f"selected_month_{id_chart}",
         )
+        if st.session_state.get(
+            f"last_month_selected_{id_chart}", False
+        ) != selected_month:
+            st.session_state[f"flag_year_month_updated_{id_chart}"] = True
+
+        st.session_state[f"last_month_selected_{id_chart}"] = selected_month
         if "All" not in selected_month:
             optional_info["<em>Months</em>"] = selected_month
             df = df[df["Month_Display"].isin(selected_month)]
@@ -333,15 +567,21 @@ def create_filters(df, path, id_chart):
             df["Day"].dropna().max(),
             key=f"selected_day_{id_chart}",
         )
+        if st.session_state.get(f"last_selected_day_{id_chart}", None) != selected_day:
+            st.session_state[f"flag_year_month_updated_{id_chart}"] = True
+        st.session_state[f"last_selected_day_{id_chart}"] = selected_day
         if len(selected_day) == 1:
             st.warning("Please select a valid date range.")
             st.stop()
         if len(selected_day) == 2:
-            optional_info["<em>Selected Days</em>"] = f"{selected_day[0].strftime('%Y/%m/%d')} to {selected_day[1].strftime('%Y/%m/%d')}"
+            optional_info["<em>Selected Days</em>"] = (
+                f"{selected_day[0].strftime('%Y/%m/%d')} to {selected_day[1].strftime('%Y/%m/%d')}"
+            )
         df = df[(df["Day"] >= selected_day[0]) & (df["Day"] <= selected_day[1])]
     return df, optional_info
 
-def render_chart_with_base_type_of_chart(chart):
+
+def render_chart_with_base_type_of_chart(chart, pages, page):
     st.subheader(chart["chart_name"], divider="grey", anchor=False)
     df = read_parquet(chart["file_path"], chart.get("date_column", False))
     if chart["type"] == "Bar Chart":
@@ -358,16 +598,48 @@ def render_chart_with_base_type_of_chart(chart):
         fig = create_variance_comparison_bar_chart_with_filters(chart, df)
     elif chart["type"] == "Choropleth Map":
         fig = create_choropleth_map_with_filters(chart, df)
-
+    mid_colum = st.columns([1,0.7,1])[1]
     if st.session_state["edit_mode_is_enabled"]:
-        if st.button("Edit Chart :material/edit_square:", key=f"{chart['chart_id']}_edit", use_container_width=True):
-            create_edit_form(chart, fig)
-            pass
+        if mid_colum.button(
+            "Edit Chart :material/edit_square:",
+            key=f"{chart['chart_id']}_edit",
+        ):
+            create_edit_form(chart, fig, pages, page)
 
-@st.dialog(title="Edit this chart", width="large")
-def create_edit_form(chart, fig):
+
+def delete_chart(pages, selected_page: str, page, selected_chart):
+    import set_up_chart
+    import time
+
+    st.subheader("Edit this chart", anchor=False, divider="grey")
+    if st.button(
+        ":material/delete: Chart",
+        disabled=selected_chart is None,
+        use_container_width=True,
+    ):
+        page["charts"] = [
+            chart
+            for chart in page["charts"]
+            if chart["chart_name"] != selected_chart["chart_name"]
+        ]
+        pages = [p if p["title"] != selected_page else page for p in pages]
+        set_up_chart.save_pages(pages)
+        st.success(f"Chart {selected_chart['chart_name']} deleted.")
+        time.sleep(2)
+        st.rerun()
+
+
+@st.dialog(title=" ", width="large")
+def create_edit_form(chart, fig, pages, page):
+
+    delete_chart(pages, page["title"], page, chart)
     if chart["type"] != "Slicer Chart":
-        st.plotly_chart(fig, use_container_width=True, key=f"{chart['chart_id']}_chart_edit", on_select=lambda : None)
+        st.plotly_chart(
+            fig,
+            use_container_width=True,
+            key=f"{chart['chart_id']}_chart_edit",
+            on_select=lambda: None,
+        )
     df = read_parquet(chart["file_path"], chart.get("date_column", False))
     available_dimensions = df.select_dtypes(
         exclude=["number", "datetime"]
@@ -375,14 +647,31 @@ def create_edit_form(chart, fig):
     name_of_chart = st.text_input("Chart Name", chart.get("chart_name", ""))
     available_measures = df.select_dtypes(include=["number"]).columns.tolist()
     available_date_fields = df.select_dtypes(include=["datetime"]).columns.tolist()
-    dimensions = st.multiselect("Select Dimension", available_dimensions, default=chart.get("dimension", []))
-    measures = st.multiselect("Select Measure", available_measures, default=chart.get("measure", []))
-    date_fields = st.multiselect("Select Date Field", available_date_fields, default=chart.get("date_column", []))
+    dimension= None
+    if chart["type"] != "Variance Comparison":
+        dimension = st.selectbox(
+            "Select Dimension", available_dimensions, index=available_dimensions.index(chart.get("main_dimension", []))
+        )
+    dimensions = st.multiselect(
+        "Select Filters", available_dimensions, default=chart.get("dimension", [])
+    )
+    measures = st.multiselect(
+        "Select Measure", available_measures, default=chart.get("measure", [])
+    )
+    date_fields = st.multiselect(
+        "Select Date Field", available_date_fields, default=chart.get("date_column", [])
+    )
+
     from set_up_chart import get_available_positions
-    from components.positions_component.src.streamlit_component_x import position_selector
+    from components.positions_component.src.streamlit_component_x import (
+        position_selector,
+    )
     from set_up_chart import load_pages, save_pages
     import uuid
-    available_positions = get_available_positions(st.session_state.name_of_actually_page)
+
+    available_positions = get_available_positions(
+        st.session_state.name_of_actually_page
+    )
     if not available_positions:
         st.warning(
             "No available positions on this page. Please remove an existing chart or select a different page."
@@ -394,18 +683,21 @@ def create_edit_form(chart, fig):
                 available_positions.remove(available_position)
     st.markdown("Select New Position")
     selected_position = position_selector(positions=available_positions)
-    
-    if st.button("Save Changes", disabled=not bool(selected_position), use_container_width=True):
+
+    if st.button(
+        "Save Changes", disabled=not bool(selected_position), use_container_width=True
+    ):
         chart_config = {
-                "chart_name": name_of_chart,
-                "type": chart.get("type"),
-                "dimension": dimensions,
-                "measure": measures,
-                "date_column": date_fields,
-                "dynamic_measures": measures,
-                "file_path": chart.get("file_path"),
-                "position": selected_position,
-                }
+            "chart_name": name_of_chart,
+            "type": chart.get("type"),
+            "dimension": dimensions,
+            "main_dimension": dimension,
+            "measure": measures,
+            "date_column": date_fields,
+            "dynamic_measures": measures,
+            "file_path": chart.get("file_path"),
+            "position": selected_position,
+        }
         selected_page = st.session_state.name_of_actually_page
         pages = load_pages()
         for page in pages:
@@ -421,24 +713,78 @@ def create_edit_form(chart, fig):
         st.success("Chart edited successfully.")
         st.toast("Chart edited successfully.", icon=":material/check_circle:")
         from time import sleep
+
         sleep(2)
         st.rerun()
 
-def create_choropleth_map(df: pd.DataFrame, measure: str, location_column: str, annotation: str = None) -> px.choropleth:
+
+def create_choropleth_map(
+    df: pd.DataFrame, measure: str, location_column: str, annotation: str = None
+) -> px.choropleth:
     if df[location_column].str.match(r"^[A-Z]{2}$").all():
         locationmode = "USA-states"
         scope = "usa"
     elif df[location_column].str.match(r"^[A-Z]{3}$").all():
         locationmode = "ISO-3"
         scope = "world"
-    elif df[location_column].isin(["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut",
-                                   "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa",
-                                   "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan",
-                                   "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire",
-                                   "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio",
-                                   "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota",
-                                   "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia",
-                                   "Wisconsin", "Wyoming"]).all():
+    elif (
+        df[location_column]
+        .isin(
+            [
+                "Alabama",
+                "Alaska",
+                "Arizona",
+                "Arkansas",
+                "California",
+                "Colorado",
+                "Connecticut",
+                "Delaware",
+                "Florida",
+                "Georgia",
+                "Hawaii",
+                "Idaho",
+                "Illinois",
+                "Indiana",
+                "Iowa",
+                "Kansas",
+                "Kentucky",
+                "Louisiana",
+                "Maine",
+                "Maryland",
+                "Massachusetts",
+                "Michigan",
+                "Minnesota",
+                "Mississippi",
+                "Missouri",
+                "Montana",
+                "Nebraska",
+                "Nevada",
+                "New Hampshire",
+                "New Jersey",
+                "New Mexico",
+                "New York",
+                "North Carolina",
+                "North Dakota",
+                "Ohio",
+                "Oklahoma",
+                "Oregon",
+                "Pennsylvania",
+                "Rhode Island",
+                "South Carolina",
+                "South Dakota",
+                "Tennessee",
+                "Texas",
+                "Utah",
+                "Vermont",
+                "Virginia",
+                "Washington",
+                "West Virginia",
+                "Wisconsin",
+                "Wyoming",
+            ]
+        )
+        .all()
+    ):
         locationmode = "USA-states"
         scope = "usa"
     else:
@@ -458,7 +804,7 @@ def create_choropleth_map(df: pd.DataFrame, measure: str, location_column: str, 
         yaxis=dict(tickformat=",.2f"),
         coloraxis_showscale=False,
         showlegend=False,
-        margin=dict(l=10, r=10, t=120, b=0)
+        margin=dict(l=10, r=10, t=120, b=0),
     )
     if annotation:
         fig_map.add_annotation(
@@ -471,16 +817,28 @@ def create_choropleth_map(df: pd.DataFrame, measure: str, location_column: str, 
             font=dict(size=12, color="black"),
             align="left",
             xanchor="left",
-            yanchor="top"
+            yanchor="top",
         )
     return fig_map
 
+
 def create_choropleth_map_with_filters(chart: dict, df: pd.DataFrame):
-    filtered_df, selected_dimension, selected_measure, optional_info, _ = render_form(chart, df)
-    fig = create_choropleth_map(filtered_df, selected_measure, chart["dimension"][0])
-    st.plotly_chart(fig, use_container_width=True, key=f"{chart['chart_id']}_chart", on_select=lambda : None)
+    filtered_df, selected_dimension, selected_measure, optional_info, _ = render_form(
+        chart, df
+    )
+    fig = create_choropleth_map(filtered_df, selected_measure, chart["main_dimension"])
+    st.plotly_chart(
+        fig,
+        use_container_width=True,
+        key=f"{chart['chart_id']}_chart",
+        on_select=lambda: None,
+    )
     return fig
-def create_line_chart_with_infinite_lines(data: dict, xaxis_title, yaxis_title, annotation) -> go.Figure:
+
+
+def create_line_chart_with_infinite_lines(
+    data: dict, xaxis_title, yaxis_title, annotation = False
+) -> go.Figure:
     fig = go.Figure()
     for line in data.get("lines", []):
         fig.add_trace(
@@ -498,7 +856,7 @@ def create_line_chart_with_infinite_lines(data: dict, xaxis_title, yaxis_title, 
     fig.update_layout(
         xaxis_title=xaxis_title,
         yaxis_title=yaxis_title,
-        margin=dict(l=10, r=10, t=120, b=10)
+        margin=dict(l=10, r=10, t=120, b=10),
     )
     if annotation:
         fig.add_annotation(
@@ -511,21 +869,39 @@ def create_line_chart_with_infinite_lines(data: dict, xaxis_title, yaxis_title, 
             font=dict(size=12, color="black"),
             align="left",
             xanchor="left",
-            yanchor="top"
+            yanchor="top",
         )
     return fig
 
+
 @fragment
 def create_line_chart_with_filters(chart: dict, df):
-    filtered_df, selected_dimension, selected_measure, optional_info, _ = render_form(chart, df)
+    filtered_df, selected_dimension, selected_measure, optional_info, _ = render_form(
+        chart, df
+    )
     fig = create_line_chart_with_infinite_lines(
-        data={"lines": [{"x": filtered_df[chart.get("dimension")[0]], "y": filtered_df[selected_measure], "marker_color": "blue"}]},
-        xaxis_title=chart.get("dimension")[0],
+        data={
+            "lines": [
+                {
+                    "x": filtered_df[chart.get("main_dimension")],
+                    "y": filtered_df[selected_measure],
+                    "marker_color": "blue",
+                }
+            ]
+        },
+        xaxis_title=chart.get("main_dimension"),
         yaxis_title=selected_measure,
     )
-    st.plotly_chart(fig, use_container_width=True, key=f"{chart['chart_id']}_chart", on_select=lambda : None)
+    st.plotly_chart(
+        fig,
+        use_container_width=True,
+        key=f"{chart['chart_id']}_chart",
+        on_select=lambda: None,
+    )
     return fig
-def create_pie_chart_with_infinite_slices(data: dict, annotation) -> go.Figure:
+
+
+def create_pie_chart_with_infinite_slices(data: dict, annotation = False) -> go.Figure:
     fig = go.Figure()
     for slice in data.get("slices", []):
         fig.add_trace(
@@ -536,9 +912,7 @@ def create_pie_chart_with_infinite_slices(data: dict, annotation) -> go.Figure:
                 marker_colors=slice.get("marker_colors", None),
             )
         )
-    fig.update_layout(
-        margin=dict(l=10, r=10, t=120, b=10)
-    )
+    fig.update_layout(margin=dict(l=10, r=10, t=120, b=10))
     if annotation:
         fig.add_annotation(
             text=annotation,
@@ -550,19 +924,39 @@ def create_pie_chart_with_infinite_slices(data: dict, annotation) -> go.Figure:
             font=dict(size=12, color="black"),
             align="left",
             xanchor="left",
-            yanchor="top"
+            yanchor="top",
         )
     return fig
 
+
 @fragment
 def create_pie_chart_with_filters(chart: dict, df):
-    filtered_df, selected_dimension, selected_measure, optional_info, _ = render_form(chart, df)
-    fig = create_pie_chart_with_infinite_slices(
-        data={"slices": [{"labels": filtered_df[chart.get("dimension")[0]], "values": filtered_df[selected_measure], "marker_colors": ["blue", "red", "green", "yellow"]}]},
+    filtered_df, selected_dimension, selected_measure, optional_info, _ = render_form(
+        chart, df
     )
-    st.plotly_chart(fig, use_container_width=True, key=f"{chart['chart_id']}_chart", on_select=lambda : None)
+    fig = create_pie_chart_with_infinite_slices(
+        data={
+            "slices": [
+                {
+                    "labels": filtered_df[chart.get("main_dimension")],
+                    "values": filtered_df[selected_measure],
+                    "marker_colors": ["blue", "red", "green", "yellow"],
+                }
+            ]
+        },
+    )
+    st.plotly_chart(
+        fig,
+        use_container_width=True,
+        key=f"{chart['chart_id']}_chart",
+        on_select=lambda: None,
+    )
     return fig
-def create_scatter_chart_with_infinite_scatters(data: dict, xaxis_title, yaxis_title, annotation) -> go.Figure:
+
+
+def create_scatter_chart_with_infinite_scatters(
+    data: dict, xaxis_title, yaxis_title, annotation = False
+) -> go.Figure:
     fig = go.Figure()
     for scatter in data.get("scatters", []):
         fig.add_trace(
@@ -578,7 +972,7 @@ def create_scatter_chart_with_infinite_scatters(data: dict, xaxis_title, yaxis_t
     fig.update_layout(
         xaxis_title=xaxis_title,
         yaxis_title=yaxis_title,
-        margin=dict(l=10, r=10, t=120, b=10)
+        margin=dict(l=10, r=10, t=120, b=10),
     )
     if annotation:
         fig.add_annotation(
@@ -591,25 +985,43 @@ def create_scatter_chart_with_infinite_scatters(data: dict, xaxis_title, yaxis_t
             font=dict(size=12, color="black"),
             align="left",
             xanchor="left",
-            yanchor="top"
+            yanchor="top",
         )
     return fig
 
+
 @fragment
 def create_scatter_chart_with_filters(chart: dict, df):
-    filtered_df, selected_dimension, selected_measure, optional_info, _ = render_form(chart, df)
+    filtered_df, selected_dimension, selected_measure, optional_info, _ = render_form(
+        chart, df
+    )
     fig = create_scatter_chart_with_infinite_scatters(
-        data={"scatters": [{"x": filtered_df[chart.get("dimension")[0]], "y": filtered_df[selected_measure], "marker_color": "blue"}]},
-        xaxis_title=chart.get("dimension")[0],
+        data={
+            "scatters": [
+                {
+                    "x": filtered_df[chart.get("main_dimension")],
+                    "y": filtered_df[selected_measure],
+                    "marker_color": "blue",
+                }
+            ]
+        },
+        xaxis_title=chart.get("main_dimension"),
         yaxis_title=selected_measure,
     )
-    st.plotly_chart(fig, use_container_width=True, key=f"{chart['chart_id']}_chart", on_select=lambda : None)
+    st.plotly_chart(
+        fig,
+        use_container_width=True,
+        key=f"{chart['chart_id']}_chart",
+        on_select=lambda: None,
+    )
     return fig
+
 
 @fragment
 def create_slicer_chart(chart, df):
-    filtered_df, _, _, optional_info,col_2  = render_form(chart, df)
+    filtered_df, _, _, optional_info, col_2 = render_form(chart, df)
     st.dataframe(filtered_df, hide_index=True, use_container_width=True, height=500)
+
 
 @fragment
 def create_variance_comparison_bar_chart_with_filters(chart, df):
@@ -621,12 +1033,27 @@ def create_variance_comparison_bar_chart_with_filters(chart, df):
         prior_year=optional_info["prior_year"],
         this_year=optional_info["this_year"],
     )
-    st.plotly_chart(fig, use_container_width=True, key=f"{chart['chart_id']}_chart", on_select=lambda : None)
+    st.plotly_chart(
+        fig,
+        use_container_width=True,
+        key=f"{chart['chart_id']}_chart",
+        on_select=lambda: None,
+    )
     return fig
 
-def create_variance_comparison_bar_chart(total_this_year: float, total_prior_year: float, xaxis_title: str, prior_year: int, this_year: int, additional_info: str = None) -> go.Figure:
+
+def create_variance_comparison_bar_chart(
+    total_this_year: float,
+    total_prior_year: float,
+    xaxis_title: str,
+    prior_year: int,
+    this_year: int,
+    additional_info: str = None,
+) -> go.Figure:
     variance = total_this_year - total_prior_year
-    variance_percentage = (variance / total_prior_year) * 100 if total_prior_year != 0 else float("inf")
+    variance_percentage = (
+        (variance / total_prior_year) * 100 if total_prior_year != 0 else float("inf")
+    )
     total_this_year_fmt = f"{total_this_year:,.2f}"
     total_prior_year_fmt = f"{total_prior_year:,.2f}"
     variance_fmt = f"{variance:,.2f}"
@@ -672,10 +1099,18 @@ def create_variance_comparison_bar_chart(total_this_year: float, total_prior_yea
         barmode="group",
         bargap=0.05,
         showlegend=True,
-        legend=dict(x=1.02, y=1, bgcolor="rgba(255,255,255,0.5)", bordercolor="black", borderwidth=1),
+        legend=dict(
+            x=1.02,
+            y=1,
+            bgcolor="rgba(255,255,255,0.5)",
+            bordercolor="black",
+            borderwidth=1,
+        ),
         yaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
-        xaxis=dict(title=xaxis_title, showticklabels=True, showgrid=False, zeroline=False),
-        margin=dict(l=10, r=10, t=120, b=60)
+        xaxis=dict(
+            title=xaxis_title, showticklabels=True, showgrid=False, zeroline=False
+        ),
+        margin=dict(l=10, r=10, t=120, b=60),
     )
     fig.add_annotation(
         text=f"Prior Year: {prior_year} | This Year: {this_year} <br>",
@@ -687,9 +1122,10 @@ def create_variance_comparison_bar_chart(total_this_year: float, total_prior_yea
         font=dict(size=12, color="black"),
         align="left",
         xanchor="left",
-        yanchor="top"
+        yanchor="top",
     )
     return fig
+
 
 @st.cache_data
 def read_parquet(path: str, column_data: bool | str = False):
