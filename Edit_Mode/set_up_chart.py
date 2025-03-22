@@ -158,6 +158,9 @@ def setup():
     if st.session_state["chart_to_configure"] != "Variance Comparison":
         dimension = st.selectbox("Select Dimension", available_dimensions)
     dimensions = st.multiselect("Select Filters", available_dimensions)
+    display_filters = False
+    if st.session_state.chart_to_configure == "Slicer Chart":    
+        display_filters = st.checkbox("Display filters in table", key=f"Slicer tool", help="Use for display columns in table for each filter")
     measures = st.multiselect("Select Measures", available_measures)
     date_fields = st.multiselect("Select Date Fields", available_date_fields)
 
@@ -298,6 +301,7 @@ def setup():
             "file_path": file_path,
             "position": selected_position,
             "invert": invert,
+            "display_filters": display_filters,
         }
         import uuid
 

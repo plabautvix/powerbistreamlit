@@ -248,8 +248,11 @@ def render_form(chart: dict, df: pd.DataFrame):
                     df.groupby(selected_dimension)[selected_measure].sum().reset_index()
                 )
             elif chart["type"] == "Slicer Chart":
+                if chart["display_filters"]:
+                    if chart.get("main_dimension", None) not in chart["dimension"]:
+                        chart["dimension"].insert(0, chart["main_dimension"])
                 filtered_df = (
-                    df.groupby(chart.get("main_dimension"))
+                    df.groupby(chart.get("main_dimension") if not chart.get("display_filters") else chart["dimension"])
                     .agg({selected_measure: "sum"})
                     .reset_index()
                 )
@@ -655,6 +658,9 @@ def create_edit_form(chart, fig, pages, page):
     dimensions = st.multiselect(
         "Select Filters", available_dimensions, default=chart.get("dimension", [])
     )
+    display_filters = False
+    if chart["type"] == "Slicer Chart":    
+        display_filters = st.checkbox("Display filters in table", key=f"{chart['chart_id']}_invert", help="Use for display columns in table for each filter")
     measures = st.multiselect(
         "Select Measure", available_measures, default=chart.get("measure", [])
     )
@@ -697,6 +703,7 @@ def create_edit_form(chart, fig, pages, page):
             "dynamic_measures": measures,
             "file_path": chart.get("file_path"),
             "position": selected_position,
+            "display_filters": display_filters,
         }
         selected_page = st.session_state.name_of_actually_page
         pages = load_pages()

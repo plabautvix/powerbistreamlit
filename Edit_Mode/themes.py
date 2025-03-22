@@ -3,7 +3,7 @@ import streamlit as st
 def render_change_theme_button():
     ms = st.session_state
     if "themes" not in ms: 
-        ms.themes = {"current_theme": "light",
+        ms.themes = {"current_theme": "dark",
                             "refreshed": True,
                             
                             "light": {"theme.base": "dark",
@@ -33,6 +33,9 @@ def render_change_theme_button():
         if previous_theme == "dark": ms.themes["current_theme"] = "light"
         elif previous_theme == "light": ms.themes["current_theme"] = "dark"
 
+    if "first_entry_theme" not in ms:
+        ChangeTheme()
+        st.session_state.first_entry_theme = True
 
     btn_face = ms.themes["light"]["button_face"] if ms.themes["current_theme"] == "light" else ms.themes["dark"]["button_face"]
     st.button(btn_face, on_click=ChangeTheme, use_container_width=True)

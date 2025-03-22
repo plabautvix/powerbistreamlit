@@ -69,6 +69,65 @@
                 ],
                 "invert": false,
                 "chart_id": "a3a56977889241cc858a92761912163b"
+            },
+            {
+                "chart_name": "test",
+                "type": "Slicer Chart",
+                "dimension": [
+                    "city",
+                    "PageTitle",
+                    "SessionSource",
+                    "Month_Name",
+                    "Week-Year",
+                    "Pages"
+                ],
+                "main_dimension": "SessionSource",
+                "measure": [
+                    "PageViews",
+                    "userEngagementDuration"
+                ],
+                "date_column": [
+                    "Date"
+                ],
+                "dynamic_measures": [
+                    "PageViews",
+                    "userEngagementDuration"
+                ],
+                "file_path": "./database\\google_analytics.parquet",
+                "position": [
+                    "ROW3, COL1",
+                    "ROW3, COL2",
+                    "ROW3, COL3"
+                ],
+                "display_filters": true,
+                "chart_id": "c8a9a92d-981b-4d1d-8047-83d267ab39b2"
+            },
+            {
+                "chart_name": "teste",
+                "type": "Slicer Chart",
+                "dimension": [
+                    "TranDesc",
+                    "InventoryCD",
+                    "ItemType",
+                    "Descr3",
+                    "ItemClass"
+                ],
+                "main_dimension": "TranDesc",
+                "measure": [
+                    "TranCost"
+                ],
+                "date_column": [],
+                "dynamic_measures": [
+                    "TranCost"
+                ],
+                "file_path": "./database\\Sales_Invoice.parquet",
+                "position": [
+                    "ROW4, COL1",
+                    "ROW4, COL2",
+                    "ROW4, COL3"
+                ],
+                "display_filters": true,
+                "chart_id": "5b8ded43-a87a-4373-a730-fba042bbbc42"
             }
         ],
         "with_title": true
