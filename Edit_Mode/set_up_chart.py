@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.express as px
 import os
 import json
-from Edit_Mode.Edit_Mode.utils import (
+from utils import (
     create_bar_chart_with_infinite_bars,
     render_markdown,
     create_line_chart_with_infinite_lines,
@@ -13,7 +13,7 @@ from Edit_Mode.Edit_Mode.utils import (
     create_year_and_month_week_and_day_columns,
     create_choropleth_map,
 )
-from Edit_Mode.Edit_Mode.components.positions_component.src.streamlit_component_x import position_selector
+from Edit_Mode.components.positions_component.src.streamlit_component_x import position_selector
 from datetime import datetime
 
 # Path to the pages.json file
