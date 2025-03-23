@@ -601,9 +601,9 @@ def render_chart_with_base_type_of_chart(chart, pages, page):
         fig = create_variance_comparison_bar_chart_with_filters(chart, df)
     elif chart["type"] == "Choropleth Map":
         fig = create_choropleth_map_with_filters(chart, df)
-    mid_colum = st.columns([1,0.7,1])[1]
+
     if st.session_state["edit_mode_is_enabled"]:
-        if mid_colum.button(
+        if st.button(
             "Edit Chart :material/edit_square:",
             key=f"{chart['chart_id']}_edit",
         ):
@@ -660,7 +660,7 @@ def create_edit_form(chart, fig, pages, page):
     )
     display_filters = False
     if chart["type"] == "Slicer Chart":    
-        display_filters = st.checkbox("Display filters in table", key=f"{chart['chart_id']}_invert", help="Use for display columns in table for each filter")
+        display_filters = st.checkbox("Display filters in table and group by filters selected", key=f"{chart['chart_id']}_invert", help="Use for display columns in table for each filter and group by filters selected")
     measures = st.multiselect(
         "Select Measure", available_measures, default=chart.get("measure", [])
     )
