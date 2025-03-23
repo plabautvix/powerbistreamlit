@@ -17,7 +17,7 @@ def render_change_theme_button():
                             "dark":  {"theme.base": "light",
                                     "theme.backgroundColor": "white",
                                     "theme.primaryColor": "#5591f5",
-                                    "theme.secondaryBackgroundColor": "#b5b1a7",
+                                    "theme.secondaryBackgroundColor": "#ebebeb",
                                     "theme.textColor": "#0a1464",
                                     "button_face": "🌞"},
                             }

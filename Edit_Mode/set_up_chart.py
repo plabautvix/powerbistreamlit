@@ -286,8 +286,7 @@ def setup():
         st.info("No Preview Available")
     # Step 6: Save Chart Configuration
     if st.button("Save Chart Configuration", use_container_width=True):
-        if st.session_state["chart_to_configure"] == "Variance Comparison":
-            dimensions = None
+
         chart_config = {
             "chart_name": chart_title,
             "type": st.session_state["chart_to_configure"],

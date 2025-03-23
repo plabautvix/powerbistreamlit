@@ -3,83 +3,10 @@
         "title": "Test Page",
         "charts": [
             {
-                "chart_name": "XXX",
-                "type": "Bar Chart",
+                "chart_name": "dsfdsfsdf",
+                "type": "Pie Chart",
                 "dimension": [
-                    "city"
-                ],
-                "main_dimension": "SessionSource",
-                "measure": [
-                    "PageViews"
-                ],
-                "date_column": [
-                    "Date"
-                ],
-                "filter_dimensions": [
-                    "city"
-                ],
-                "dynamic_measures": [
-                    "PageViews"
-                ],
-                "default_dynamic_measure": "PageViews",
-                "file_path": "./database\\google_analytics.parquet",
-                "position": [
-                    "ROW1, COL1",
-                    "ROW1, COL2",
-                    "ROW1, COL3"
-                ],
-                "invert": false,
-                "chart_id": "97157be38a114c259a209f5516f0ded7"
-            },
-            {
-                "chart_name": "yyyy",
-                "type": "Bar Chart",
-                "dimension": [
-                    "Month_Name",
-                    "SessionSource",
-                    "PageTitle",
-                    "city",
-                    "Week-Year"
-                ],
-                "main_dimension": "SessionSource",
-                "measure": [
-                    "PageViews",
-                    "userEngagementDuration"
-                ],
-                "date_column": [
-                    "Date"
-                ],
-                "filter_dimensions": [
-                    "Month_Name",
-                    "SessionSource",
-                    "PageTitle",
-                    "city",
-                    "Week-Year"
-                ],
-                "dynamic_measures": [
-                    "PageViews",
-                    "userEngagementDuration"
-                ],
-                "default_dynamic_measure": "PageViews",
-                "file_path": "./database\\google_analytics.parquet",
-                "position": [
-                    "ROW2, COL1",
-                    "ROW2, COL2",
-                    "ROW2, COL3"
-                ],
-                "invert": false,
-                "chart_id": "a3a56977889241cc858a92761912163b"
-            },
-            {
-                "chart_name": "test",
-                "type": "Slicer Chart",
-                "dimension": [
-                    "city",
-                    "PageTitle",
-                    "SessionSource",
-                    "Month_Name",
-                    "Week-Year",
-                    "Pages"
+                    "PageTitle"
                 ],
                 "main_dimension": "SessionSource",
                 "measure": [
@@ -95,39 +22,10 @@
                 ],
                 "file_path": "./database\\google_analytics.parquet",
                 "position": [
-                    "ROW3, COL1",
-                    "ROW3, COL2",
-                    "ROW3, COL3"
+                    "ROW1, COL2"
                 ],
-                "display_filters": true,
-                "chart_id": "c8a9a92d-981b-4d1d-8047-83d267ab39b2"
-            },
-            {
-                "chart_name": "teste",
-                "type": "Slicer Chart",
-                "dimension": [
-                    "TranDesc",
-                    "InventoryCD",
-                    "ItemType",
-                    "Descr3",
-                    "ItemClass"
-                ],
-                "main_dimension": "TranDesc",
-                "measure": [
-                    "TranCost"
-                ],
-                "date_column": [],
-                "dynamic_measures": [
-                    "TranCost"
-                ],
-                "file_path": "./database\\Sales_Invoice.parquet",
-                "position": [
-                    "ROW4, COL1",
-                    "ROW4, COL2",
-                    "ROW4, COL3"
-                ],
-                "display_filters": true,
-                "chart_id": "5b8ded43-a87a-4373-a730-fba042bbbc42"
+                "display_filters": false,
+                "chart_id": "a1f39305-854a-47ab-80e5-05171d0a7a73"
             }
         ],
         "with_title": true
