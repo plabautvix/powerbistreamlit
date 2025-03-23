@@ -13,7 +13,7 @@ from utils import (
     create_year_and_month_week_and_day_columns,
     create_choropleth_map,
 )
-from powerbistreamlit.components.positions_component.src.streamlit_component_x import position_selector
+from components.positions_component.src.streamlit_component_x import position_selector
 from datetime import datetime
 
 # Path to the pages.json file
