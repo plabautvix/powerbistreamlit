@@ -688,10 +688,8 @@ def create_edit_form(chart, fig, pages, page):
                 position+= "(Auto Select)"
                 available_positions.append(position)
     
-    st.write(available_positions)
     st.markdown("Select New Position")
     selected_position = position_selector(positions=available_positions)
-    st.write
     if st.button(
         "Save Changes", disabled=not bool(selected_position), use_container_width=True
     ):
