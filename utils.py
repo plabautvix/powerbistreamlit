@@ -203,7 +203,11 @@ def render_form(chart: dict, df: pd.DataFrame):
                     key=f"{chart['chart_id']}_dimension",
                     index=chart["dimension"].index(chart.get("main_dimension", [])),
                 )
-
+            if chart.get("type") == "Slicer Chart":
+                selected_dimension = st.multiselect(
+                    "Select Dimensions", chart["dimension"], key=f"{chart['chart_id']}_dimension",
+                    default=chart.get("dimension", [])
+                )
             selected_measure = st.selectbox(
                 "Select Measure", chart["measure"], key=f"{chart['chart_id']}_measure"
             )
@@ -248,11 +252,8 @@ def render_form(chart: dict, df: pd.DataFrame):
                     df.groupby(selected_dimension)[selected_measure].sum().reset_index()
                 )
             elif chart["type"] == "Slicer Chart":
-                if chart["display_filters"]:
-                    if chart.get("main_dimension", None) not in chart["dimension"]:
-                        chart["dimension"].insert(0, chart["main_dimension"])
                 filtered_df = (
-                    df.groupby(chart.get("main_dimension") if not chart.get("display_filters") else chart["dimension"])
+                    df.groupby(selected_dimension)
                     .agg({selected_measure: "sum"})
                     .reset_index()
                 )
@@ -651,16 +652,13 @@ def create_edit_form(chart, fig, pages, page):
     available_measures = df.select_dtypes(include=["number"]).columns.tolist()
     available_date_fields = df.select_dtypes(include=["datetime"]).columns.tolist()
     dimension= None
-    if chart["type"] != "Variance Comparison":
+    if chart["type"] not in ("Variance Comparison", "Slicer Chart"):
         dimension = st.selectbox(
             "Select Dimension", available_dimensions, index=available_dimensions.index(chart.get("main_dimension", []))
         )
     dimensions = st.multiselect(
-        "Select Filters", available_dimensions, default=chart.get("dimension", [])
-    )
-    display_filters = False
-    if chart["type"] == "Slicer Chart":    
-        display_filters = st.checkbox("Display filters in table and group by filters selected", key=f"{chart['chart_id']}_invert", help="Use for display columns in table for each filter and group by filters selected")
+        f"Select {'Filters' if chart.get('type') not in ('Slicer Chart') else 'Dimensions'}", available_dimensions, default=chart.get("dimension", [])
+    )  
     measures = st.multiselect(
         "Select Measure", available_measures, default=chart.get("measure", [])
     )
@@ -687,9 +685,13 @@ def create_edit_form(chart, fig, pages, page):
         for available_position in available_positions:
             if position in available_position:
                 available_positions.remove(available_position)
+                position+= "(Auto Select)"
+                available_positions.append(position)
+    
+    st.write(available_positions)
     st.markdown("Select New Position")
     selected_position = position_selector(positions=available_positions)
-
+    st.write
     if st.button(
         "Save Changes", disabled=not bool(selected_position), use_container_width=True
     ):
@@ -703,7 +705,6 @@ def create_edit_form(chart, fig, pages, page):
             "dynamic_measures": measures,
             "file_path": chart.get("file_path"),
             "position": selected_position,
-            "display_filters": display_filters,
         }
         selected_page = st.session_state.name_of_actually_page
         pages = load_pages()

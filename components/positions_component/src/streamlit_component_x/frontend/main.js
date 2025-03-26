@@ -29,6 +29,8 @@ function onRender(event) {
         for (let col = 1; col <= cols; col++) {
           const cellPosition = `ROW${row}, COL${col}`;
           const isRestricted = restrictedPositions.includes(`:red[${cellPosition}]`);
+          const selecteds = restrictedPositions.includes(`${cellPosition}(Auto Select)(Auto Select)`);
+          console.log(selecteds, "top");
 
           const cell = document.createElement('div');
           cell.className = 'cell';
@@ -42,8 +44,13 @@ function onRender(event) {
             cell.style.backgroundColor = "#ff6666"; // Red color
             cell.style.color = "white"; // White text for contrast
           }
+          else if (selecteds) {
+            cell.classList.add('selected');
+            selectedPositions.push(cellPosition);
+            sendValue(selectedPositions); // Send to Streamlit
+          }
 
-          // Add click event for all cells
+          // Add click event for all cel  
           cell.addEventListener('click', () => {
             const position = cellPosition;
 
@@ -79,13 +86,15 @@ function onRender(event) {
           gridContainer.appendChild(cell);
         }
       }
+
+      }
     }
 
     generateStaticGrid();
     Streamlit.setComponentReady();
     window.rendered = true;
   }
-}
+
 
 // Render the component whenever python send a "render event"
 Streamlit.events.addEventListener(Streamlit.RENDER_EVENT, onRender);
